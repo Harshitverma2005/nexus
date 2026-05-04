@@ -1,0 +1,58 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nexus_frontend
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend:
+        condition: service_started
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: nexus_backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_ENGINE=postgres
+      - POSTGRES_DB=nexus_db
+      - POSTGRES_USER=nexus_user
+      - POSTGRES_PASSWORD=nexus_pass
+      - POSTGRES_HOST=db
+      - POSTGRES_PORT=5432
+
+  db:
+    image: postgres:16-alpine
+    container_name: nexus_db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=nexus_db
+      - POSTGRES_USER=nexus_user
+      - POSTGRES_PASSWORD=nexus_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexus_user -d nexus_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:

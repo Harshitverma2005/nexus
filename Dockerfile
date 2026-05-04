@@ -1,23 +1,12 @@
-FROM python:3.12-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
+FROM node:20-alpine
 
 WORKDIR /app
 
-COPY docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt
+COPY package*.json /app/
+RUN npm ci
 
 COPY . /app
 
-EXPOSE 8000
+EXPOSE 8080
 
-ENTRYPOINT ["/docker-entrypoint.sh"]
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "8080"]
